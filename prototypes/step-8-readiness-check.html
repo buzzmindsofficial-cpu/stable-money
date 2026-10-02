@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Readiness Check — Stable Money Repeat Investing (Step 8 Prototype)</title>
+<style>
+  :root{
+    --ink:#1a2332; --muted:#5b6b82; --line:#e3e9f2; --bg:#f6f8fb;
+    --brand:#1f5eff; --brand-soft:#eaf0ff; --amber:#b7791f; --amber-soft:#fdf3e0;
+    --green:#1e7e46; --green-soft:#e9f6ee; --grey-soft:#eef1f6; --card:#ffffff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.55;}
+  .wrap{max-width:640px; margin:0 auto; padding:20px 16px 64px;}
+  .demo-bar{background:#1a2332; color:#fff; border-radius:12px; padding:10px 14px;
+    font-size:12.5px; display:flex; gap:8px; align-items:center; margin-bottom:16px;}
+  .demo-bar .dot{width:8px;height:8px;border-radius:50%;background:#ffc53d;flex:none;}
+  .ctx{background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:12px 16px; font-size:13.5px; color:var(--muted); margin-bottom:16px;}
+  .ctx b{color:var(--ink);}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:28px 24px; box-shadow:0 2px 12px rgba(26,35,50,.05); margin-bottom:16px;}
+  .kicker{font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--brand); font-weight:700; margin-bottom:8px;}
+  h1{font-size:24px; line-height:1.3; margin-bottom:10px;}
+  h2{font-size:19px; margin-bottom:8px;}
+  p{margin-bottom:12px; color:var(--ink);}
+  .muted{color:var(--muted); font-size:14px;}
+  .progress{height:6px; background:var(--line); border-radius:99px; margin:16px 0 4px; overflow:hidden;}
+  .progress > div{height:100%; background:var(--brand); border-radius:99px; transition:width .3s;}
+  .prog-label{font-size:12px; color:var(--muted); margin-bottom:4px;}
+  .opt{display:block; width:100%; text-align:left; background:#fff; border:1.5px solid var(--line);
+    border-radius:12px; padding:14px 16px; margin:10px 0; font-size:15px; cursor:pointer;
+    transition:border-color .15s, background .15s; color:var(--ink);}
+  .opt:hover{border-color:var(--brand); background:var(--brand-soft);}
+  .opt small{display:block; color:var(--muted); font-size:13px; margin-top:2px;}
+  .opt.sel{border-color:var(--brand); background:var(--brand-soft);}
+  .scale{display:flex; gap:8px; margin:14px 0;}
+  .scale button{flex:1; padding:12px 4px; border:1.5px solid var(--line); border-radius:10px;
+    background:#fff; cursor:pointer; font-size:14px; color:var(--muted);}
+  .scale button.sel{border-color:var(--brand); background:var(--brand-soft); color:var(--ink); font-weight:700;}
+  .scale-lbls{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:-6px;}
+  .btn{display:inline-block; background:var(--brand); color:#fff; border:none; border-radius:12px;
+    padding:14px 22px; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px;}
+  .btn:disabled{background:#a9b6cc; cursor:not-allowed;}
+  .btn.ghost{background:#fff; color:var(--brand); border:1.5px solid var(--brand); margin-left:8px;}
+  .btn.quiet{background:var(--grey-soft); color:var(--ink); border:none;}
+  .nav{display:flex; justify-content:space-between; align-items:center; margin-top:20px;}
+  .back{background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer;}
+  .signal{border-radius:14px; padding:18px; margin:16px 0; display:flex; gap:14px; align-items:flex-start;}
+  .signal .badge{font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    padding:6px 12px; border-radius:99px; white-space:nowrap;}
+  .signal.ready{background:var(--green-soft);} .signal.ready .badge{background:var(--green); color:#fff;}
+  .signal.almost{background:var(--amber-soft);} .signal.almost .badge{background:var(--amber); color:#fff;}
+  .signal.notyet{background:var(--grey-soft);} .signal.notyet .badge{background:#5b6b82; color:#fff;}
+  .signal p{margin:4px 0 0; font-size:14.5px;}
+  .refl{background:#fbfcfe; border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0;}
+  .refl h3{font-size:14px; margin:10px 0 6px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+  .refl h3:first-child{margin-top:0;}
+  .refl ul{margin:0 0 6px 18px; font-size:14.5px;}
+  .refl li{margin-bottom:6px;}
+  .cta-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .note{border-left:3px solid var(--brand); background:var(--brand-soft); padding:12px 14px;
+    border-radius:0 10px 10px 0; font-size:13.5px; margin:14px 0; color:var(--ink);}
+  .note.amber{border-color:var(--amber); background:var(--amber-soft);}
+  details{border:1px solid var(--line); border-radius:12px; background:#fff; margin:12px 0; overflow:hidden;}
+  details summary{padding:14px 16px; cursor:pointer; font-weight:600; font-size:14.5px;}
+  details .body{padding:0 16px 16px; font-size:13.5px; color:var(--muted);}
+  details .body code{background:#f1f4f9; padding:1px 6px; border-radius:6px; font-size:12.5px; color:var(--ink);}
+  details .body pre{background:#1a2332; color:#dbe4f0; padding:12px; border-radius:10px;
+    font-size:12px; overflow-x:auto; margin:8px 0;}
+  table{width:100%; border-collapse:collapse; font-size:13px; margin:8px 0;}
+  th,td{border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:#f1f4f9;}
+  .persona-row{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .hidden{display:none !important;}
+  .annot{font-size:12.5px; color:#8a97ab; border-top:1px dashed var(--line); margin-top:18px; padding-top:10px;}
+  .annot b{color:#6b7a90;}
+  footer{margin-top:32px; font-size:12.5px; color:#8a97ab; text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="demo-bar"><span class="dot"></span><span><b>Step 8 prototype · mock demo.</b> No backend, no real advice. Simulated rule-based logic only — every rule is visible in “How this works”.</span></div>
+
+  <div class="ctx">📍 <b>Journey position:</b> Day 90 · you tapped <b>“Not sure yet? Take the 60-second readiness check”</b> from the nudge (Step 4 prototype). This tool never recommends a product — it mirrors your own answers back to you.</div>
+
+  <!-- ============ SCREEN: INTRO ============ -->
+  <div class="card" id="screen-intro">
+    <div class="kicker">Reinvestment readiness check</div>
+    <h1>Is a second FD right for you <em>right now?</em></h1>
+    <p class="muted">Five quick questions about your situation — not about products. At the end you get a plain-language reflection of your own answers, and three honest exits: proceed, wait, or learn more.</p>
+    <div class="note"><b>What this is not:</b> financial advice. It doesn't know your full finances, it never names a product, and “not yet” is a perfectly good answer. Your answers never leave this page.</div>
+    <button class="btn" onclick="go('q1')">Start the 60-second check</button>
+    <button class="btn ghost" onclick="toggleHow()">How this works</button>
+    <div class="persona-row">
+      <span class="muted" style="width:100%">Or try a one-tap example:</span>
+      <button class="btn quiet" onclick="loadPersona('confident')">Confident repeater</button>
+      <button class="btn quiet" onclick="loadPersona('cautious')">Cautious saver</button>
+      <button class="btn quiet" onclick="loadPersona('stretched')">Stretched budget</button>
+    </div>
+    <div class="annot"><b>Strategy note:</b> offered as the “not sure yet” path off the Day-90 nudge (Step 4). It converts hesitation into a structured moment instead of a deferral — and a “not yet” with a reminder set is captured intent, not a lost user.</div>
+  </div>
+
+  <!-- ============ SCREENS: QUESTIONS (rendered by JS) ============ -->
+  <div class="card hidden" id="screen-q">
+    <div class="prog-label" id="q-step-label">Question 1 of 5</div>
+    <div class="progress"><div id="q-progress" style="width:20%"></div></div>
+    <h2 id="q-title" style="margin-top:12px"></h2>
+    <p class="muted" id="q-sub"></p>
+    <div id="q-options"></div>
+    <div class="nav">
+      <button class="back" id="q-back" onclick="goBack()">← Back</button>
+      <button class="btn" id="q-next" onclick="goNext()" disabled>Continue</button>
+    </div>
+    <div class="annot"><b>Strategy note:</b> every question offers “not sure” / a middle option — forced certainty would manufacture false confidence. Skipping is allowed; a partial reflection is labeled partial.</div>
+  </div>
+
+  <!-- ============ SCREEN: RESULT ============ -->
+  <div class="card hidden" id="screen-result">
+    <div class="kicker">Your reflection</div>
+    <h1 id="r-headline"></h1>
+    <div class="signal" id="r-signal"><span class="badge" id="r-badge"></span><p id="r-signal-text"></p></div>
+    <div class="refl">
+      <h3>In plain words</h3>
+      <p id="r-summary" style="font-size:15px"></p>
+      <h3>What's solid</h3>
+      <ul id="r-strengths"></ul>
+      <h3>Worth a second thought</h3>
+      <ul id="r-concerns"></ul>
+      <h3 id="r-tension-h" class="hidden">One thing to notice</h3>
+      <p id="r-tension" class="hidden" style="font-size:14.5px"></p>
+    </div>
+    <div class="note amber" id="r-distress-note" style="display:none"><b>A gentle note:</b> your answers suggest money is tight right now. There's no rush — a second FD can wait until your cushion is rebuilt. If money worries are weighing on you, talking it through with someone you trust can help.</div>
+    <div class="cta-row" id="r-ctas"></div>
+    <div class="nav">
+      <button class="back" onclick="retake()">↺ Retake the check</button>
+      <button class="btn quiet" onclick="toggleHow()">How this result was built</button>
+    </div>
+    <div class="annot"><b>Strategy note:</b> the result mirrors, never prescribes. “Ready” leads to the Two-Tap Rebook (Step 4); “Not yet” leads to a reminder — both are wins. Nothing here names a product or says “you should invest”.</div>
+  </div>
+
+  <!-- ============ HOW THIS WORKS ============ -->
+  <div class="card hidden" id="screen-how">
+    <div class="kicker">Transparency</div>
+    <h1>How this works — no black box</h1>
+    <p class="muted">This demo uses <b>deterministic rules + template-based language generation</b> — not a large language model. In production, the same transparency requirement would apply to any model: every output must be traceable to the user's own answers.</p>
+
+    <details open>
+      <summary>1 · The scoring rules (automation logic)</summary>
+      <div class="body">
+        <table>
+          <tr><th>Question</th><th>Answer → points</th><th>Why</th></tr>
+          <tr><td>Spare savings beyond emergency needs?</td><td>Yes +2 · Not sure 0 · <b>No −10 (hard gate)</b></td><td>Never encourage investing emergency money.</td></tr>
+          <tr><td>Could you manage an emergency without this money?</td><td>Yes +2 · Probably +1 · <b>No −10 (hard gate)</b></td><td>Liquidity safety is non-negotiable.</td></tr>
+          <tr><td>Lock-in comfort (1–5)</td><td>4–5 → +2 · 3 → +1 · 1–2 → 0 + concern</td><td>Discomfort predicts early-break regret.</td></tr>
+          <tr><td>Preferred lock-in length</td><td>informational (shapes next-step copy)</td><td>Routes toward suitable tenure thinking.</td></tr>
+          <tr><td>What matters most</td><td>informational (shapes reflection copy)</td><td>Safety-first users get insurance reminders.</td></tr>
+        </table>
+        <p><b>Bands:</b> <code>≥ +5 → Ready</code> · <code>+2 to +4 → Almost</code> · <code>&lt; +2 or any hard gate → Not yet</code>. A hard gate always wins over the total.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>2 · The language templates (“prompts”)</summary>
+      <div class="body">
+        <p>Each result is assembled from fixed templates filled with the user's answers — the closest thing here to a “prompt”:</p>
+<pre>SUMMARY = "You have {savings_phrase}, and you feel
+{emergency_phrase} about handling an emergency
+without this money. Locking money away feels
+{comfort_phrase} to you."
+
+STRENGTH  := "You have savings set aside beyond
+  your emergency needs."            // if q1 = yes
+CONCERN   := "You're not certain the savings are
+  truly spare — that's exactly the right thing
+  to be unsure about."               // if q1 = notsure
+TENSION   := "You said you have spare savings but
+  also that an emergency would be hard — those
+  two don't quite line up, and it's worth
+  pausing on which is truer."        // if q1=yes &amp; q2=no</pre>
+        <p>If this were LLM-powered, the system prompt would carry the same hard constraints: <code>never name a product · never say "you should invest" · hard-gate emergency-money answers · always offer "remind me later"</code> — plus a verbatim limitations disclosure. Deterministic templates were chosen for the demo because financial-context outputs must be auditable word-for-word.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>3 · Example inputs → outputs</summary>
+      <div class="body">
+        <p><b>Confident repeater</b> (yes / yes / 5 / medium / safety) → <b>Ready</b>: “You have savings beyond your emergency needs, and you're confident about handling an emergency without this money…” → CTA: proceed to Two-Tap Rebook.</p>
+        <p><b>Cautious saver</b> (yes / probably / 3 / short / easy access) → <b>Almost</b>: one solid strength plus two open questions → CTA: read the liquidity explainer, then decide.</p>
+        <p><b>Stretched budget</b> (no / no / 2 / short / safety) → <b>Not yet</b> (hard gate): supportive copy, no invest CTA, reminder offered, distress note shown.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>4 · Edge cases handled</summary>
+      <div class="body">
+        <ul>
+          <li><b>All “not sure” / no positive signals:</b> → Not yet — “almost” requires at least one solid strength, otherwise uncertainty itself is the signal.</li>
+          <li><b>Contradiction (spare savings = yes, emergency = no):</b> tension paragraph names it explicitly instead of averaging it away.</li>
+          <li><b>Skipped questions:</b> allowed; result labeled “partial reflection” and scored on answered questions only.</li>
+          <li><b>Distress pattern (no + no):</b> supportive note, invest CTA removed entirely.</li>
+          <li><b>Retake:</b> one tap, no judgment copy (“answers change — that's fine”).</li>
+          <li><b>Timeout / abandonment:</b> nothing is stored; no follow-up nag is triggered by an incomplete check.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>5 · Safety guardrails</summary>
+      <div class="body">
+        <ul>
+          <li>No product names, rates, or issuer mentions anywhere in the flow.</li>
+          <li>The words “you should invest” (or equivalents) never appear in any template.</li>
+          <li>Hard gates on emergency-money answers cannot be overridden by other scores.</li>
+          <li>Limitations disclosed upfront and repeated at result (“not financial advice”).</li>
+          <li>All processing is client-side; answers never leave the page (demo) / device (production intent).</li>
+          <li>“Remind me later” is always present — waiting is designed as a first-class outcome.</li>
+        </ul>
+      </div>
+    </details>
+
+    <div class="nav"><button class="back" onclick="toggleHow(true)">← Back</button></div>
+  </div>
+
+  <footer>Step 8 · Vibe-coding &amp; automation prototype · mock data only · not financial advice</footer>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const QUESTIONS = [
+  { id:'q1', title:'Do you have savings beyond your emergency needs that you won\u2019t need for the FD\u2019s tenure?',
+    sub:'Only the money you could truly set aside — not your safety cushion.',
+    options:[
+      {v:'yes', t:'Yes', s:'I have spare savings set aside'},
+      {v:'notsure', t:'Not sure', s:'I\u2019d need to check properly'},
+      {v:'no', t:'No', s:'Most of my money is my safety net'} ]},
+  { id:'q2', title:'If an emergency came up, could you manage without this money until maturity?',
+    sub:'FDs can usually be broken early, but often with a penalty and paperwork.',
+    options:[
+      {v:'yes', t:'Yes, comfortably', s:''},
+      {v:'probably', t:'Probably', s:'It would be tight but manageable'},
+      {v:'no', t:'No', s:'I might need it'} ]},
+  { id:'q3', title:'How do you feel about locking money away?', sub:'Tap a number — 1 is uneasy, 5 is completely fine.', scale:true },
+  { id:'q4', title:'Which lock-in length feels okay to think about?',
+    sub:'This only shapes guidance — nothing is booked here.',
+    options:[
+      {v:'short', t:'Shorter', s:'Around a year — I like flexibility'},
+      {v:'medium', t:'Medium', s:'1–3 years feels fine'},
+      {v:'flexible', t:'Not sure yet', s:'I\u2019d like to understand options first'} ]},
+  { id:'q5', title:'What matters most to you right now?',
+    sub:'There\u2019s no wrong answer — it just changes what we highlight.',
+    options:[
+      {v:'safety', t:'Safety of my principal', s:'Not losing money matters most'},
+      {v:'rate', t:'A good interest rate', s:'Making the money work harder'},
+      {v:'access', t:'Easy access if needed', s:'Flexibility over returns'} ]},
+];
+const PERSONAS = {
+  confident:{q1:'yes', q2:'yes', q3:5, q4:'medium', q5:'safety'},
+  cautious:{q1:'yes', q2:'probably', q3:3, q4:'short', q5:'access'},
+  stretched:{q1:'no', q2:'no', q3:2, q4:'short', q5:'safety'}
+};
+const state = { answers:{}, order:['q1','q2','q3','q4','q5'], idx:0, returnTo:'screen-intro' };
+
+/* ================= NAV ================= */
+function show(id){
+  ['screen-intro','screen-q','screen-result','screen-how'].forEach(s =>
+    document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function go(qid){
+  state.idx = state.order.indexOf(qid);
+  renderQ(); show('screen-q');
+}
+function goBack(){
+  if(state.idx > 0){ state.idx--; renderQ(); }
+  else show('screen-intro');
+}
+function goNext(){
+  const q = QUESTIONS[state.idx];
+  if(state.answers[q.id] === undefined) return;
+  if(state.idx < QUESTIONS.length - 1){ state.idx++; renderQ(); }
+  else renderResult();
+}
+function retake(){ state.answers = {}; go('q1'); }
+function toggleHow(back){
+  const how = document.getElementById('screen-how');
+  const isHidden = how.classList.contains('hidden');
+  if(back){ show(state.returnTo === 'screen-how' ? 'screen-intro' : state.returnTo); }
+  else { state.returnTo = document.getElementById('screen-result').classList.contains('hidden') ? 'screen-intro' : 'screen-result'; show('screen-how'); }
+}
+function loadPersona(name){
+  state.answers = Object.assign({}, PERSONAS[name]);
+  renderResult(true);
+}
+
+/* ================= QUESTION RENDER ================= */
+function renderQ(){
+  const q = QUESTIONS[state.idx];
+  document.getElementById('q-step-label').textContent =
+    'Question ' + (state.idx+1) + ' of ' + QUESTIONS.length;
+  document.getElementById('q-progress').style.width = ((state.idx+1)/QUESTIONS.length*100) + '%';
+  document.getElementById('q-title').textContent = q.title;
+  document.getElementById('q-sub').textContent = q.sub;
+  const box = document.getElementById('q-options'); box.innerHTML = '';
+  if(q.scale){
+    const wrap = document.createElement('div'); wrap.className = 'scale';
+    for(let i=1;i<=5;i++){
+      const b = document.createElement('button'); b.textContent = i;
+      if(state.answers[q.id] === i) b.classList.add('sel');
+      b.onclick = () => { state.answers[q.id] = i; renderQ(); };
+      wrap.appendChild(b);
+    }
+    box.appendChild(wrap);
+    const lbls = document.createElement('div'); lbls.className = 'scale-lbls';
+    lbls.innerHTML = '<span>Uneasy</span><span>Completely fine</span>';
+    box.appendChild(lbls);
+  } else {
+    q.options.forEach(o => {
+      const b = document.createElement('button'); b.className = 'opt';
+      if(state.answers[q.id] === o.v) b.classList.add('sel');
+      b.innerHTML = o.t + (o.s ? '<small>' + o.s + '</small>' : '');
+      b.onclick = () => { state.answers[q.id] = o.v; renderQ(); };
+      box.appendChild(b);
+    });
+  }
+  document.getElementById('q-next').disabled = (state.answers[q.id] === undefined);
+  document.getElementById('q-next').textContent = state.idx === QUESTIONS.length-1 ? 'See my reflection' : 'Continue';
+  document.getElementById('q-back').style.visibility = state.idx === 0 ? 'hidden' : 'visible';
+}
+
+/* ================= NLG ENGINE (simulated AI: deterministic templates) ================= */
+function phrase(map, v, fb){ return map[v] || fb; }
+function buildReflection(a){
+  let score = 0, hardGate = false;
+  const strengths = [], concerns = [];
+  let tension = '';
+
+  // Q1
+  if(a.q1 === 'yes'){ score += 2; strengths.push('You have savings set aside beyond your emergency needs.'); }
+  else if(a.q1 === 'notsure'){ concerns.push('You\u2019re not certain the savings are truly spare — that\u2019s exactly the right thing to be unsure about.'); }
+  else if(a.q1 === 'no'){ score -= 10; hardGate = true; concerns.push('Most of your money is your safety net right now — investing it would mean risking your cushion.'); }
+  // Q2
+  if(a.q2 === 'yes'){ score += 2; strengths.push('You\u2019re confident you could handle an emergency without touching this money.'); }
+  else if(a.q2 === 'probably'){ score += 1; concerns.push('An emergency would be tight — worth keeping the amount modest if you proceed.'); }
+  else if(a.q2 === 'no'){ score -= 10; hardGate = true; concerns.push('You might need this money before maturity — locking it away could create stress later.'); }
+  // Q3
+  const c = a.q3;
+  if(c >= 4){ score += 2; strengths.push('Locking money away feels comfortable to you.'); }
+  else if(c === 3){ score += 1; concerns.push('You\u2019re on the fence about lock-ins — a shorter tenure might sit easier.'); }
+  else if(c !== undefined){ concerns.push('Lock-ins make you uneasy — that feeling is worth listening to, not pushing past.'); }
+  // Tension detection
+  if(a.q1 === 'yes' && a.q2 === 'no')
+    tension = 'You said you have spare savings, but also that an emergency would be hard without this money — those two don\u2019t quite line up. It\u2019s worth pausing on which feels truer before deciding.';
+  if(a.q1 === 'notsure' && a.q2 === 'yes')
+    tension = 'You\u2019re confident about emergencies but unsure the savings are truly spare — a quick look at your budget could turn this “almost” into a confident yes.';
+
+  const answered = Object.keys(a).length;
+  const partial = answered < 5;
+
+  let band, headline, signalText, signalClass, badge;
+  if(hardGate || score < 2 || strengths.length === 0){
+    band = 'notyet'; badge = 'Not yet'; signalClass = 'notyet';
+    headline = partial ? 'Based on what you shared: not yet — and that\u2019s a good answer.' : 'Right now looks like a “not yet” — and that\u2019s a good answer.';
+    signalText = 'Your answers suggest the timing isn\u2019t right. Waiting until your cushion is rebuilt isn\u2019t missing out — it\u2019s the careful move this tool exists to protect.';
+    if(!hardGate && strengths.length === 0)
+      signalText = 'Right now, uncertainty itself is the signal — and waiting is the careful move this tool exists to protect.';
+  } else if(score <= 4){
+    band = 'almost'; badge = 'Almost'; signalClass = 'almost';
+    headline = 'You\u2019re almost there — one or two things to settle first.';
+    signalText = 'Nothing here says “don\u2019t”. One or two open questions are doing the work of holding you back — resolve those and the decision gets easy.';
+  } else {
+    band = 'ready'; badge = 'Ready'; signalClass = 'ready';
+    headline = 'From your own answers: you look ready.';
+    signalText = 'Your savings, emergency cushion, and comfort with lock-ins all line up. The decision ahead is about which FD — not whether.';
+  }
+
+  const savingsPhrase = phrase({yes:'have savings beyond your emergency needs', notsure:'aren\u2019t certain your savings are truly spare', no:'are keeping most of your money as your safety net'}, a.q1, 'didn\u2019t say');
+  const emergPhrase = phrase({yes:'feel confident', probably:'feel it would be tight but manageable', no:'worry you\u2019d struggle'}, a.q2, 'didn\u2019t say');
+  const comfortPhrase = c === undefined ? 'something you didn\u2019t rate' : (c >= 4 ? 'comfortable' : (c === 3 ? 'a mixed bag' : 'uneasy'));
+  let summary = 'You ' + savingsPhrase + ', and you ' + emergPhrase + ' about handling an emergency without this money. Locking money away feels ' + comfortPhrase + ' to you.';
+  if(a.q5 === 'safety') summary += ' Since safety of principal matters most to you, insurance coverage deserves a close look whenever you compare options.';
+  if(a.q5 === 'access') summary += ' Since easy access matters most, pay special attention to premature-withdrawal terms before anything else.';
+  if(a.q5 === 'rate') summary += ' Since the rate matters to you, comparing a couple of insured options side by side is worth the five minutes.';
+  if(partial) summary += ' (This is a partial reflection — you skipped ' + (5 - answered) + ' question' + (answered === 4 ? '' : 's') + '.)';
+
+  return { band, badge, signalClass, headline, signalText, summary, strengths, concerns, tension, distress:(a.q1 === 'no' && a.q2 === 'no') };
+}
+
+/* ================= RESULT RENDER ================= */
+function renderResult(fromPersona){
+  const r = buildReflection(state.answers);
+  document.getElementById('r-headline').textContent = r.headline;
+  const sig = document.getElementById('r-signal');
+  sig.className = 'signal ' + r.signalClass;
+  document.getElementById('r-badge').textContent = r.badge;
+  document.getElementById('r-signal-text').textContent = r.signalText;
+  document.getElementById('r-summary').textContent = r.summary;
+  const fill = (id, arr, empty) => {
+    const ul = document.getElementById(id); ul.innerHTML = '';
+    (arr.length ? arr : [empty]).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+  };
+  fill('r-strengths', r.strengths, 'Nothing flagged as solid yet — that\u2019s okay, it just means caution is doing its job.');
+  fill('r-concerns', r.concerns, 'No concerns surfaced from your answers.');
+  document.getElementById('r-tension-h').classList.toggle('hidden', !r.tension);
+  document.getElementById('r-tension').classList.toggle('hidden', !r.tension);
+  if(r.tension) document.getElementById('r-tension').textContent = r.tension;
+  document.getElementById('r-distress-note').style.display = r.distress ? 'block' : 'none';
+
+  const ctas = document.getElementById('r-ctas'); ctas.innerHTML = '';
+  const mk = (label, cls, fn) => {
+    const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label;
+    b.onclick = fn; ctas.appendChild(b);
+  };
+  if(r.band === 'ready'){
+    mk('Continue to Two-Tap Rebook →', '', () => alert('Demo: this would deep-link into the Step 4 prototype\u2019s Rebook flow, pre-filled from your first FD.'));
+  } else if(r.band === 'almost'){
+    mk('Read the liquidity explainer', 'ghost', () => alert('Demo: this would open the plain-language premature-withdrawal explainer.'));
+  }
+  // "Not yet" deliberately gets NO invest CTA.
+  mk('Remind me in 30 days', 'quiet', () => alert('Demo: a single reminder would be scheduled. One reminder, no drip campaign.'));
+  mk('Back to My FDs', 'quiet', () => show('screen-intro'));
+  show('screen-result');
+}
+</script>
+</body>
+</html>

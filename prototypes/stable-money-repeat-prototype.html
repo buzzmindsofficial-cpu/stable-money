@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stable Money — Two-Tap Rebook (Prototype)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #eef2f5; color: #1a2b3c; display: flex; justify-content: center; min-height: 100vh; }
+  .phone { width: 100%; max-width: 430px; background: #fff; min-height: 100vh; position: relative; box-shadow: 0 0 30px rgba(0,0,0,.08); display: flex; flex-direction: column; }
+  .mockbar { background: #1a2b3c; color: #ffd97a; font-size: 11px; text-align: center; padding: 6px 10px; }
+  .stagebar { display: flex; gap: 4px; padding: 10px 12px 4px; background: #fff; overflow-x: auto; }
+  .stage { font-size: 10px; padding: 5px 9px; border-radius: 20px; background: #eef2f5; color: #7a8a99; white-space: nowrap; }
+  .stage.on { background: #0e7c5b; color: #fff; font-weight: 600; }
+  .stage.done { background: #d8efe6; color: #0e7c5b; }
+  #app { flex: 1; padding: 14px 16px 90px; }
+  h1 { font-size: 24px; line-height: 1.25; margin: 8px 0 6px; }
+  h2 { font-size: 18px; margin: 14px 0 8px; }
+  p.sub { color: #5b6d7e; font-size: 14px; line-height: 1.5; }
+  .card { border: 1px solid #e3e9ee; border-radius: 14px; padding: 14px; margin: 10px 0; background: #fff; }
+  .card.tap { cursor: pointer; }
+  .card.tap:active { background: #f6faf8; }
+  .card.sel { border: 2px solid #0e7c5b; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .rate { font-size: 26px; font-weight: 700; color: #0e7c5b; }
+  .rate small { font-size: 13px; font-weight: 400; color: #5b6d7e; }
+  .bank { font-weight: 600; font-size: 15px; }
+  .meta { font-size: 12px; color: #7a8a99; margin-top: 3px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; margin-top: 8px; }
+  .b-ins { background: #d8efe6; color: #0b6b4f; }
+  .b-nbfc { background: #fff3d6; color: #8a6100; }
+  .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+  .btn-p { background: #0e7c5b; color: #fff; }
+  .btn-p:disabled { background: #b9c8c1; cursor: not-allowed; }
+  .btn-s { background: #eef2f5; color: #1a2b3c; }
+  .btn-ghost { background: none; color: #0e7c5b; font-weight: 600; padding: 10px; width: 100%; border: none; font-size: 14px; cursor: pointer; }
+  .trustbox { border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.55; margin: 10px 0; }
+  .t-green { background: #eefaf4; border: 1px solid #bfe6d4; }
+  .t-amber { background: #fffaf0; border: 1px solid #f0dcae; }
+  .t-blue { background: #f0f6fd; border: 1px solid #c9ddf5; }
+  .trustbox b { display: block; margin-bottom: 4px; }
+  .acc { border: 1px solid #e3e9ee; border-radius: 12px; margin: 8px 0; overflow: hidden; }
+  .acc-h { padding: 13px 14px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; }
+  .acc-b { padding: 0 14px 14px; font-size: 13px; color: #4a5b6c; line-height: 1.6; display: none; }
+  .acc.open .acc-b { display: block; }
+  .chips { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+  .chip { padding: 9px 16px; border-radius: 20px; border: 1px solid #d4dde3; font-size: 14px; cursor: pointer; background: #fff; }
+  .chip.on { background: #0e7c5b; color: #fff; border-color: #0e7c5b; font-weight: 600; }
+  .toggle { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; font-size: 14px; font-weight: 500; }
+  .sw { width: 46px; height: 26px; border-radius: 20px; background: #cfd9df; position: relative; cursor: pointer; transition: .2s; flex-shrink: 0; }
+  .sw::after { content: ""; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: .2s; }
+  .sw.on { background: #0e7c5b; }
+  .sw.on::after { left: 23px; }
+  input[type=text], input[type=number] { width: 100%; padding: 13px; font-size: 18px; border: 1.5px solid #d4dde3; border-radius: 12px; margin-top: 6px; }
+  input:focus { outline: none; border-color: #0e7c5b; }
+  .err { color: #c0392b; font-size: 13px; margin-top: 6px; display: none; }
+  .err.show { display: block; }
+  .tray { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: #1a2b3c; color: #fff; padding: 12px 16px; display: none; align-items: center; justify-content: space-between; z-index: 40; }
+  .tray.show { display: flex; }
+  .tray button { background: #0e7c5b; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  table.cmp th, table.cmp td { border: 1px solid #e3e9ee; padding: 9px 8px; text-align: left; vertical-align: top; }
+  table.cmp th { background: #f6faf8; font-size: 12px; }
+  .krow { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #eef2f5; font-size: 14px; }
+  .krow:last-child { border: none; }
+  .krow span:first-child { color: #5b6d7e; }
+  .krow span:last-child { font-weight: 600; text-align: right; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; margin: 12px 0; color: #4a5b6c; }
+  .check input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: #0e7c5b; }
+  .timeline { display: flex; margin: 14px 0 6px; }
+  .tstep { flex: 1; text-align: center; position: relative; font-size: 10px; color: #7a8a99; }
+  .tstep .dot { width: 26px; height: 26px; border-radius: 50%; background: #eef2f5; margin: 0 auto 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #7a8a99; }
+  .tstep.done .dot { background: #0e7c5b; color: #fff; }
+  .tstep.done { color: #0b6b4f; font-weight: 600; }
+  .tstep.now .dot { background: #fff; border: 2px solid #0e7c5b; color: #0e7c5b; }
+  .tstep:not(:last-child)::after { content: ""; position: absolute; top: 13px; left: 60%; width: 80%; height: 2px; background: #e3e9ee; }
+  .tstep.done:not(:last-child)::after { background: #0e7c5b; }
+  .seg { display: flex; background: #eef2f5; border-radius: 12px; padding: 4px; margin: 12px 0; }
+  .seg button { flex: 1; border: none; background: none; padding: 9px 4px; border-radius: 9px; font-size: 13px; font-weight: 600; color: #7a8a99; cursor: pointer; }
+  .seg button.on { background: #fff; color: #0e7c5b; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+  .modal-ov { position: fixed; inset: 0; background: rgba(10,25,35,.55); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+  .modal { background: #fff; border-radius: 18px; padding: 24px 20px; max-width: 360px; width: 100%; text-align: center; }
+  .modal .big { font-size: 40px; font-weight: 700; color: #0e7c5b; margin: 10px 0; }
+  #stratBtn { position: fixed; bottom: 18px; right: max(18px, calc(50% - 215px + 18px)); width: 46px; height: 46px; border-radius: 50%; background: #1a2b3c; color: #fff; border: none; font-size: 20px; cursor: pointer; z-index: 50; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  #stratPanel { position: fixed; bottom: 74px; right: max(12px, calc(50% - 215px + 12px)); width: min(330px, calc(100vw - 24px)); background: #1a2b3c; color: #e8eef3; border-radius: 14px; padding: 16px; font-size: 13px; line-height: 1.6; z-index: 50; display: none; box-shadow: 0 8px 30px rgba(0,0,0,.3); }
+  #stratPanel.show { display: block; }
+  #stratPanel b { color: #7fe0b8; }
+  .foot { text-align: center; font-size: 11px; color: #9aabb8; padding: 18px 0 6px; }
+  .back { background: none; border: none; color: #0e7c5b; font-size: 14px; font-weight: 600; cursor: pointer; padding: 6px 0; }
+  .pill { font-size: 11px; background: #eef2f5; padding: 4px 10px; border-radius: 12px; color: #5b6d7e; }
+  .splitbar { height: 10px; border-radius: 6px; overflow: hidden; display: flex; margin: 8px 0; }
+  .splitbar div:first-child { background: #0e7c5b; }
+  .splitbar div:last-child { background: #f0c75e; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: #5b6d7e; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; }
+  .nudge { border: 2px dashed #0e7c5b; background: #f6faf8; }
+  .amt-step { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .amt-step button { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid #0e7c5b; background: #fff; color: #0e7c5b; font-size: 20px; cursor: pointer; }
+  .amt-step .val { font-size: 22px; font-weight: 700; flex: 1; text-align: center; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbar">PROTOTYPE — mock data only · no backend · not real rates</div>
+  <div class="stagebar" id="stagebar"></div>
+  <div id="app"></div>
+  <button id="stratBtn" onclick="toggleStrat()" title="Why this screen exists">i</button>
+  <div id="stratPanel"></div>
+  <div class="foot">Front-end prototype · mock data · no backend · Built for Step 4</div>
+</div>
+<div class="tray" id="tray"><span id="trayTxt"></span><button onclick="go('compare')">Compare</button></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ================= MOCK DATA ================= */
+const PRODUCTS = [
+  { id:'utkarsh', bank:'Utkarsh Small Finance Bank', type:'bank', insured:true,  rating:'CRISIL A1+',
+    rates:{12:8.50, 24:8.25, 36:8.00}, min:10000,
+    breakTerms:'Premature withdrawal allowed after 3 months. Interest paid at the rate applicable for the completed period, minus a 1% penalty.',
+    matDefault:'Auto-renews for the same tenure at the prevailing rate unless you choose otherwise. We remind you 30 days before.' },
+  { id:'unity', bank:'Unity Small Finance Bank', type:'bank', insured:true, rating:'CRISIL A1+',
+    rates:{12:9.00, 24:8.60, 36:8.35}, min:10000,
+    breakTerms:'Premature withdrawal allowed after 3 months. Interest paid at the rate applicable for the completed period, minus a 1% penalty.',
+    matDefault:'Auto-renews for the same tenure at the prevailing rate unless you choose otherwise. We remind you 30 days before.' },
+  { id:'suryoday', bank:'Suryoday Small Finance Bank', type:'bank', insured:true, rating:'CRISIL A1+',
+    rates:{12:8.25, 24:8.00, 36:7.75}, min:5000,
+    breakTerms:'Premature withdrawal allowed after 3 months. Interest paid at the rate applicable for the completed period, minus a 1% penalty.',
+    matDefault:'Auto-renews for the same tenure at the prevailing rate unless you choose otherwise. We remind you 30 days before.' },
+  { id:'indusind', bank:'IndusInd Bank', type:'bank', insured:true, rating:'CRISIL AA+',
+    rates:{12:7.75, 24:7.50, 36:7.25}, min:10000,
+    breakTerms:'Premature withdrawal allowed after 3 months with a 1% penalty on the contracted rate.',
+    matDefault:'Auto-renews for the same tenure at the prevailing rate unless you choose otherwise. We remind you 30 days before.' },
+  { id:'shriram', bank:'Shriram Finance', type:'nbfc', insured:false, rating:'CRISIL AA+',
+    rates:{12:8.75, 24:8.50, 36:8.30}, min:10000,
+    breakTerms:'Premature withdrawal allowed after 3 months per NBFC terms, with penalty as disclosed at booking.',
+    matDefault:'Maturity proceeds are credited to your bank account. No auto-renewal — you choose what to do next.' },
+  { id:'bajaj', bank:'Bajaj Finance', type:'nbfc', insured:false, rating:'CRISIL AAA',
+    rates:{12:8.10, 24:7.95, 36:7.80}, min:15000,
+    breakTerms:'Premature withdrawal allowed after 3 months per NBFC terms, with penalty as disclosed at booking.',
+    matDefault:'Maturity proceeds are credited to your bank account. No auto-renewal — you choose what to do next.' },
+];
+
+/* ================= STATE ================= */
+const S = {
+  screen:'home', day:1, seenMs:{},
+  holdings:[], compare:[], sel:null,
+  draft:{amount:100000, months:12},
+  insuredOnly:false, tenureFilter:12,
+  rebook:null, nudgeDismissed:false,
+};
+
+const STAGES = [
+  ['Discover', ['home','discover']],
+  ['Compare',  ['compare']],
+  ['Decide',   ['detail']],
+  ['Book',     ['book','review','receipt']],
+  ['Holding',  ['dashboard']],
+  ['Reinvest', ['reinvest','reinvestReview','portfolio']],
+];
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const prod = id => PRODUCTS.find(p=>p.id===id);
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const dstr = d => d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+const addM = (d,m) => { const x=new Date(d); x.setMonth(x.getMonth()+m); return x; };
+const accrued = h => h.amount * (h.rate/100) * (S.day/365);
+const matVal = (amt,rate,months) => amt * Math.pow(1+rate/100, months/12);
+const insBadge = p => p.insured
+  ? '<span class="badge b-ins">✓ DICGC-insured</span>'
+  : '<span class="badge b-nbfc">NBFC · Not DICGC-insured</span>';
+const insBox = p => p.insured
+  ? `<div class="trustbox t-green"><b>✓ DICGC-insured up to ₹5,00,000</b>Deposits with ${p.bank} are insured by DICGC (a wholly-owned RBI subsidiary) up to ₹5,00,000 per depositor, per bank — principal plus interest.</div>`
+  : `<div class="trustbox t-amber"><b>Not covered by DICGC insurance</b>This is an <b>NBFC deposit</b>, not a bank deposit. DICGC deposit insurance does not apply here. The higher rate reflects higher risk — only invest money you are comfortable keeping invested.</div>`;
+
+function go(s){ S.screen=s; $('stratPanel').classList.remove('show'); render(); window.scrollTo(0,0); }
+function back(to){ go(to); }
+
+/* ================= STRATEGY NOTES ================= */
+const STRAT = {
+  home:'<b>Strategy — entry point.</b> The acquisition surface is deliberately unchanged. The repeat-investing strategy (Step 3, Concepts A+B) begins <i>after</i> booking, not before — Step 2 showed the gap is post-booking, not acquisition.',
+  discover:'<b>Strategy — Safety Ledger (Step 3, Idea 3).</b> Insurance status is a primary, unavoidable decision input on every card — not FAQ content. The "DICGC-insured only" toggle lets risk-averse users (Cautious First-Timer) filter the world to what they trust.',
+  compare:'<b>Strategy — trust is compared, not just rate.</b> Insurance gets a first-class row in the comparison table, so a higher NBFC rate can\'t silently win on yield alone.',
+  detail:'<b>Strategy — the trust/safety decision point.</b> DICGC vs NBFC is stated plainly; NBFC booking requires explicit acknowledgment. This is the mis-selling guardrail from Step 2\'s design principles.',
+  book:'<b>Strategy — effort baseline.</b> This is the full first-booking effort. Concept B\'s promise is that the <i>second</i> booking beats this by an order of magnitude.',
+  review:'<b>Strategy — no surprises.</b> Every number, the insurance line, and the break terms are confirmed before money moves. Trust compounds when nothing is hidden.',
+  receipt:'<b>Strategy — Trust Receipt (Step 3, Idea 11).</b> "Confirm → reassure": a plain-language receipt converts a transaction into the <i>start</i> of a relationship — the root-cause fix from Step 2 §C.',
+  dashboard:'<b>Strategy — the attention gap (Step 2 §F), made visible.</b> Use the Day 1 → 30 → 60 → 90 control to time-travel the holding period. Milestones are <b>Savings Pulse</b> (Step 3, Idea 1): proof the first FD "worked", delivered as information — never urgency.',
+  reinvest:'<b>Strategy — Concept B: Repeat in Two Taps.</b> Pre-filled from your last booking (assistance, never advice); insured alternatives sit beside the default to counter default bias; Break FD terms answer lock-in fear upfront (H8).',
+  reinvestReview:'<b>Strategy — same trust bar, half the effort.</b> The second decision carries the identical safety disclosures as the first — ease never comes at the cost of clarity.',
+  portfolio:'<b>Strategy — loop closed.</b> Two FDs, one relationship. This is the Step 2 thesis made visible: from single-transaction utility to ongoing fixed-income home.',
+};
+
+/* ================= VIEWS ================= */
+function vHome(){ return `
+  <button class="back" onclick="go('dashboard')" style="visibility:hidden">‹</button>
+  <h1>Grow your savings beyond your bank.</h1>
+  <p class="sub">Compare fixed deposit rates across 200+ banks &amp; NBFCs — and see exactly how safe each option is, before you invest.</p>
+  <div class="trustbox t-blue"><b>How safety works here</b>Bank FDs are DICGC-insured up to ₹5,00,000. NBFC deposits are not — we label every option clearly.</div>
+  <button class="btn btn-p" onclick="go('discover')">Find my FD</button>
+  <button class="btn-ghost" onclick="go('discover')">How it works</button>
+  <div class="card" style="margin-top:18px"><div class="row"><span class="bank" style="font-size:14px">Top insured rate today</span><span class="pill">mock</span></div>
+  <div class="row" style="margin-top:6px"><span class="rate">9.00<small>% p.a.</small></span><span class="meta">Unity Small Finance Bank · 1 yr</span></div></div>`;
+}
+
+function vDiscover(){
+  const list = PRODUCTS.filter(p => (!S.insuredOnly || p.insured) && p.rates[S.tenureFilter]);
+  const cards = list.map(p=>`
+    <div class="card tap ${S.compare.includes(p.id)?'sel':''}" onclick="goDetail('${p.id}')">
+      <div class="row"><span class="bank">${p.bank}</span>
+        <label style="font-size:12px;color:#0e7c5b" onclick="event.stopPropagation()"><input type="checkbox" ${S.compare.includes(p.id)?'checked':''} onchange="toggleCmp('${p.id}')"> Compare</label></div>
+      <div class="row" style="margin-top:6px"><span class="rate">${p.rates[S.tenureFilter].toFixed(2)}<small>% p.a.</small></span>
+        <span class="meta">${S.tenureFilter===12?'1 yr':S.tenureFilter===24?'2 yrs':'3 yrs'} · min ${fmt(p.min)}</span></div>
+      ${insBadge(p)}
+    </div>`).join('');
+  return `
+  <button class="back" onclick="back('home')">‹ Home</button>
+  <h2>Compare FD rates</h2>
+  <div class="chips">
+    ${[12,24,36].map(m=>`<button class="chip ${S.tenureFilter===m?'on':''}" onclick="S.tenureFilter=${m};render()">${m===12?'1 yr':m===24?'2 yrs':'3 yrs'}</button>`).join('')}
+  </div>
+  <div class="toggle"><span>🛡 Show DICGC-insured only <span class="meta">(hides NBFC deposits)</span></span><div class="sw ${S.insuredOnly?'on':''}" onclick="S.insuredOnly=!S.insuredOnly;render()"></div></div>
+  ${cards || '<div class="card"><p class="sub">No options match these filters. Try a different tenure.</p></div>'}`;
+}
+function toggleCmp(id){
+  if(S.compare.includes(id)) S.compare = S.compare.filter(x=>x!==id);
+  else if(S.compare.length<3) S.compare.push(id);
+  render();
+}
+function goDetail(id){ S.sel=id; go('detail'); }
+
+function vCompare(){
+  if(!S.compare.length) return `<button class="back" onclick="back('discover')">‹ Discover</button>
+    <h2>Compare FDs</h2><div class="card"><p class="sub"><b>Nothing to compare yet.</b><br>Go back and tick “Compare” on up to 3 FDs to see them side by side.</p>
+    <button class="btn btn-s" onclick="go('discover')">Back to discovery</button></div>`;
+  const cols = S.compare.map(prod);
+  const row = (label, fn, hl=false) => `<tr><th>${label}</th>${cols.map(p=>`<td ${hl?'style="background:#eefaf4;font-weight:600"':''}>${fn(p)}</td>`).join('')}</tr>`;
+  return `<button class="back" onclick="back('discover')">‹ Discover</button><h2>Compare (${cols.length})</h2>
+  <div style="overflow-x:auto"><table class="cmp">
+    <tr><th></th>${cols.map(p=>`<td><b>${p.bank}</b><br><button class="btn btn-p" style="padding:8px;margin-top:8px;font-size:13px" onclick="goDetail('${p.id}')">Choose</button></td>`).join('')}</tr>
+    ${row('Interest rate', p=>`<b style="color:#0e7c5b">${p.rates[S.tenureFilter].toFixed(2)}%</b> p.a.`)}
+    ${row('Safety', p=>insBadge(p), true)}
+    ${row('Minimum amount', p=>fmt(p.min))}
+    ${row('Rating', p=>p.rating)}
+    ${row('Break before maturity', p=>'<span style="font-size:12px">Allowed after 3 months, 1% penalty</span>')}
+  </table></div>
+  <div class="trustbox t-blue" style="margin-top:12px"><b>Reading this table</b>Rate is only one row. The <b>Safety</b> row tells you which options carry DICGC insurance — compare that first.</div>`;
+}
+
+function vDetail(){
+  const p = prod(S.sel);
+  return `<button class="back" onclick="back(S.compare.length?'compare':'discover')">‹ Back</button>
+  <h2>${p.bank}</h2>
+  <div class="row"><span class="rate">${p.rates[S.tenureFilter].toFixed(2)}<small>% p.a. · ${S.tenureFilter/12} yr</small></span><span class="pill">${p.rating}</span></div>
+  ${insBox(p)}
+  <div class="acc open"><div class="acc-h" onclick="this.parentElement.classList.toggle('open')">What the tenure means <span>▾</span></div>
+    <div class="acc-b">Tenure is how long your money stays invested. Longer tenures usually pay higher rates but keep money locked longer. <b>You don't need to wait for maturity to invest again</b> — a second FD can be booked anytime.</div></div>
+  <div class="acc"><div class="acc-h" onclick="this.parentElement.classList.toggle('open')">What happens at maturity <span>▾</span></div>
+    <div class="acc-b">${p.matDefault}</div></div>
+  <div class="acc"><div class="acc-h" onclick="this.parentElement.classList.toggle('open')">If you need the money early <span>▾</span></div>
+    <div class="acc-b">${p.breakTerms}</div></div>
+  <button class="btn btn-p" onclick="S.draft={amount:100000,months:S.tenureFilter};go('book')">Book this FD</button>
+  <button class="btn-ghost" onclick="go('discover')">Keep comparing</button>`;
+}
+
+function vBook(){
+  const p = prod(S.sel), d = S.draft;
+  const okAmt = d.amount >= p.min;
+  const mv = matVal(d.amount, p.rates[d.months], d.months);
+  return `<button class="back" onclick="back('detail')">‹ Details</button><h2>Book your FD</h2>
+  <div class="card"><div class="bank">${p.bank}</div><div class="meta">${p.rates[d.months].toFixed(2)}% p.a. · ${d.months/12} yr ${p.insured?'· DICGC-insured':'· NBFC'}</div></div>
+  <label style="font-size:13px;font-weight:600">Amount <span class="meta">(min ${fmt(p.min)})</span></label>
+  <input type="number" id="amt" value="${d.amount}" oninput="S.draft.amount=+this.value||0;render()">
+  <div class="err ${!okAmt?'show':''}">Minimum investment for this FD is ${fmt(p.min)}.</div>
+  <div class="chips">${[50000,100000,200000].map(a=>`<button class="chip" onclick="S.draft.amount=${a};render()">${fmt(a)}</button>`).join('')}</div>
+  <label style="font-size:13px;font-weight:600">Tenure</label>
+  <div class="chips">${[12,24,36].map(m=>`<button class="chip ${d.months===m?'on':''}" onclick="S.draft.months=${m};render()">${m/12} yr · ${p.rates[m].toFixed(2)}%</button>`).join('')}</div>
+  <div class="card t-blue" style="background:#f0f6fd"><div class="krow"><span>You invest</span><span>${fmt(d.amount)}</span></div>
+    <div class="krow"><span>You earn (interest)</span><span style="color:#0e7c5b">${fmt(mv-d.amount)}</span></div>
+    <div class="krow"><span>Maturity value</span><span>${fmt(mv)}</span></div>
+    <div class="krow"><span>Matures on</span><span>${dstr(addM(new Date(), d.months))}</span></div></div>
+  <div class="trustbox t-green"><b>✓ KYC verified</b>Your profile is already verified — no paperwork needed for this booking. <span class="meta">(mock)</span></div>
+  <button class="btn btn-p" ${!okAmt?'disabled':''} onclick="go('review')">Review booking</button>`;
+}
+
+function vReview(){
+  const p = prod(S.sel), d = S.draft, mv = matVal(d.amount, p.rates[d.months], d.months);
+  return `<button class="back" onclick="back('book')">‹ Edit</button><h2>Review booking</h2>
+  <div class="card">
+    <div class="krow"><span>Bank</span><span>${p.bank}</span></div>
+    <div class="krow"><span>Amount</span><span>${fmt(d.amount)}</span></div>
+    <div class="krow"><span>Rate</span><span>${p.rates[d.months].toFixed(2)}% p.a.</span></div>
+    <div class="krow"><span>Tenure</span><span>${d.months/12} year${d.months>12?'s':''}</span></div>
+    <div class="krow"><span>Maturity date</span><span>${dstr(addM(new Date(), d.months))}</span></div>
+    <div class="krow"><span>Interest you'll earn</span><span style="color:#0e7c5b">${fmt(mv-d.amount)}</span></div>
+    <div class="krow"><span>Maturity value</span><span>${fmt(mv)}</span></div>
+  </div>
+  ${insBox(p)}
+  <div class="trustbox t-blue"><b>Need it early?</b>${p.breakTerms}</div>
+  <label class="check"><input type="checkbox" id="c1"><span>I agree to the FD terms and understand the premature-withdrawal penalty above.</span></label>
+  ${p.insured?'':`<label class="check"><input type="checkbox" id="c2"><span><b>I understand this NBFC deposit is NOT covered by DICGC insurance.</b></span></label>`}
+  <button class="btn btn-p" onclick="confirmBooking()">Confirm booking</button>`;
+}
+function confirmBooking(){
+  const c1 = $('c1').checked, c2 = $('c2') ? $('c2').checked : true;
+  if(!c1 || !c2){ alert('Please accept the required confirmations to continue.'); return; }
+  const p = prod(S.sel), d = S.draft;
+  S.holdings.push({ pid:p.id, bank:p.bank, insured:p.insured, type:p.type, rate:p.rates[d.months], months:d.months, amount:d.amount, start:new Date() });
+  S.day = 1; S.seenMs = {}; S.nudgeDismissed = false;
+  go('receipt');
+}
+
+function vReceipt(){
+  const h = S.holdings[S.holdings.length-1], p = prod(h.pid), mv = matVal(h.amount,h.rate,h.months);
+  return `<div style="text-align:center;padding:18px 0 6px"><div style="font-size:44px;color:#0e7c5b">✓</div>
+    <h1>FD booked.</h1><p class="sub">Here's your receipt — everything about this investment, in plain language.</p></div>
+  <div class="card" style="border:2px solid #0e7c5b">
+    <div class="krow"><span>Amount invested</span><span>${fmt(h.amount)}</span></div>
+    <div class="krow"><span>Held with</span><span>${h.bank}</span></div>
+    <div class="krow"><span>Rate</span><span>${h.rate.toFixed(2)}% p.a.</span></div>
+    <div class="krow"><span>Tenure</span><span>${h.months/12} year${h.months>12?'s':''}</span></div>
+    <div class="krow"><span>Booked on</span><span>${dstr(h.start)}</span></div>
+    <div class="krow"><span>Matures on</span><span>${dstr(addM(h.start,h.months))}</span></div>
+    <div class="krow"><span>You'll receive</span><span style="color:#0e7c5b">${fmt(mv)}</span></div>
+  </div>
+  ${insBox(p)}
+  <div class="acc open"><div class="acc-h" onclick="this.parentElement.classList.toggle('open')">What happens at maturity <span>▾</span></div><div class="acc-b">${p.matDefault}</div></div>
+  <div class="acc"><div class="acc-h" onclick="this.parentElement.classList.toggle('open')">If you need the money early <span>▾</span></div><div class="acc-b">${p.breakTerms}</div></div>
+  <button class="btn btn-p" onclick="go('dashboard')">View my FD</button>
+  <button class="btn-ghost" onclick="go('discover')">Book another FD</button>`;
+}
+
+function holdingCard(h, i){
+  const mv = matVal(h.amount,h.rate,h.months);
+  return `<div class="card"><div class="row"><span class="bank">${h.bank}</span>${h.insured?'<span class="badge b-ins">✓ Insured</span>':'<span class="badge b-nbfc">NBFC</span>'}</div>
+  <div class="row" style="margin-top:8px"><span class="meta">Invested</span><span class="meta">Rate</span><span class="meta">Earned so far</span></div>
+  <div class="row"><b>${fmt(h.amount)}</b><b>${h.rate.toFixed(2)}%</b><b style="color:#0e7c5b">${fmt(accrued(h))}</b></div>
+  <div class="meta" style="margin-top:6px">Matures ${dstr(addM(h.start,h.months))} · worth ${fmt(mv)} then</div></div>`;
+}
+
+function vDashboard(){
+  const steps = [['Booked',1],['Day 30',30],['Day 60',60],['Day 90',90]];
+  const tl = `<div class="timeline">${steps.map(([l,d])=>{
+    const cls = S.day>d?'done':(S.day===d?'now':'');
+    return `<div class="tstep ${cls}"><div class="dot">${S.day>d?'✓':l.replace('Day ','')}</div>${l}</div>`;}).join('')}</div>`;
+  const msCards = [30,60,90].filter(d=>S.day>=d && S.seenMs[d]).map(d=>{
+    const earnedD = S.holdings.reduce((a,h)=>a+h.amount*(h.rate/100)*(d/365),0);
+    return `
+    <div class="card" style="border-left:4px solid #0e7c5b"><b>Day ${d} — your money is working ✓</b>
+    <p class="sub" style="margin-top:6px">Your FD has earned <b style="color:#0e7c5b">${fmt(earnedD)}</b> so far — exactly on track. Everything is performing as promised.</p></div>`;}).join('');
+  const nudge = (S.day>=90 && !S.nudgeDismissed && S.holdings.length===1) ? `
+    <div class="card nudge"><b>When you're ready — no rush.</b>
+    <p class="sub" style="margin:6px 0">Your first FD is performing exactly as promised. If you have more savings sitting idle, your second FD takes <b>two taps</b> — pre-filled from this one.</p>
+    <button class="btn btn-p" onclick="openRebook()">See my rebook options</button>
+    <button class="btn-ghost" onclick="S.nudgeDismissed=true;render()">Not now</button></div>` : '';
+  const second = S.holdings.length>1 ? `<button class="btn btn-s" onclick="go('portfolio')">View my portfolio (${S.holdings.length} FDs)</button>` : '';
+  return `<h2>My FDs</h2>
+  ${S.holdings.map(holdingCard).join('')}
+  <h2 style="margin-top:6px">Your first 90 days</h2>
+  <p class="sub">Simulate the holding period — watch reassurance arrive as information, never pressure:</p>
+  <div class="seg">${[1,30,60,90].map(d=>`<button class="${S.day===d?'on':''}" onclick="setDay(${d})">${d===1?'Day 1':'Day '+d}</button>`).join('')}</div>
+  ${tl}${msCards}${nudge}${second}
+  <button class="btn btn-s" onclick="openRebook()">Book a second FD</button>`;
+}
+function setDay(d){
+  S.day = d; render();
+  if([30,60,90].includes(d) && !S.seenMs[d]){ S.seenMs[d]=true; showMilestone(d); }
+}
+function showMilestone(d){
+  const earned = S.holdings.reduce((a,h)=>a+h.amount*(h.rate/100)*(d/365),0);
+  $('modalRoot').innerHTML = `<div class="modal-ov" onclick="this.remove()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="pill">Day ${d} · Savings Pulse</div>
+      <h2 style="margin-top:10px">Your money is working ✓</h2>
+      <div class="big">${fmt(earned)}</div>
+      <p class="sub">earned in interest so far — exactly on track.<br>Everything is performing as promised.</p>
+      <button class="btn btn-p" onclick="$('modalRoot').innerHTML='';render()">View my FD</button>
+      ${d===90?`<button class="btn-ghost" onclick="$('modalRoot').innerHTML='';openRebook()">Explore a second FD</button>`:''}
+    </div></div>`;
+  render();
+}
+
+function openRebook(){
+  const h = S.holdings[0];
+  S.rebook = { pid:h.pid, amount:h.amount, months:h.months, altPid:null, alts:[] };
+  refreshAlts();
+  go('reinvest');
+}
+function refreshAlts(){
+  const r = S.rebook;
+  r.alts = PRODUCTS.filter(x=>x.insured && x.id!==r.pid && x.rates[r.months])
+    .sort((a,b)=>b.rates[r.months]-a.rates[r.months]).slice(0,2).map(a=>a.id);
+}
+
+function vReinvest(){
+  const r = S.rebook, base = prod(r.pid);
+  const chosen = r.altPid ? prod(r.altPid) : base;
+  const altCards = r.alts.map(id=>{ const p=prod(id); return `
+    <div class="card tap ${r.altPid===id?'sel':''}" onclick="S.rebook.altPid='${id}';render()">
+      <div class="row"><span class="bank">${p.bank}</span>${r.altPid===id?'<span class="pill">selected</span>':''}</div>
+      <div class="row" style="margin-top:6px"><span class="rate">${p.rates[r.months].toFixed(2)}<small>% p.a.</small></span><span class="meta">${r.months/12} yr · min ${fmt(p.min)}</span></div>
+      ${insBadge(p)}</div>`;}).join('');
+  const mv = matVal(r.amount, chosen.rates[r.months], r.months);
+  return `<button class="back" onclick="back('dashboard')">‹ My FDs</button>
+  <h2>Your rebook, ready.</h2>
+  <p class="sub">Pre-filled from your first FD — <b>this is your last booking, not a recommendation.</b> Change anything.</p>
+  <div class="card" style="border:2px solid #0e7c5b">
+    <div class="row"><span class="bank">${chosen.bank}</span>${insBadge(chosen)}</div>
+    <div class="meta" style="margin:6px 0">Amount</div>
+    <div class="amt-step"><button onclick="stepAmt(-10000)">−</button><div class="val" id="rbAmt">${fmt(r.amount)}</div><button onclick="stepAmt(10000)">+</button></div>
+    <div class="meta" style="margin:6px 0">Tenure</div>
+    <div class="chips">${[12,24,36].map(m=>`<button class="chip ${r.months===m?'on':''}" onclick="S.rebook.months=${m};S.rebook.altPid=null;refreshAlts();render()">${m/12} yr · ${chosen.rates[m]?chosen.rates[m].toFixed(2)+'%':'—'}</button>`).join('')}</div>
+    <div class="krow"><span>Interest you'll earn</span><span style="color:#0e7c5b">${fmt(mv-r.amount)}</span></div>
+    <div class="krow"><span>Maturity value</span><span>${fmt(mv)}</span></div>
+  </div>
+  <h2>Insured alternatives</h2><p class="sub">Same tenure, DICGC-insured. Pick one instead if you prefer:</p>${altCards}
+  <div class="trustbox t-blue"><b>Need the money early?</b>Every option here can be broken before maturity — interest for the completed period minus a 1% penalty. No lock-in beyond the first 3 months.</div>
+  <div class="trustbox t-green"><b>✓ Safety, stated upfront</b>${chosen.insured?'This option is DICGC-insured up to ₹5,00,000.':'This is an NBFC deposit — not DICGC-insured.'} Full comparison of all 200+ options is one tap away.</div>
+  <button class="btn btn-p" onclick="go('reinvestReview')">Book second FD</button>
+  <button class="btn-ghost" onclick="go('discover')">Compare all 200+ options instead</button>`;
+}
+function stepAmt(d){ S.rebook.amount = Math.max(10000, S.rebook.amount + d); render(); }
+
+function vReinvestReview(){
+  const r = S.rebook, p = prod(r.altPid || r.pid), mv = matVal(r.amount, p.rates[r.months], r.months);
+  return `<button class="back" onclick="back('reinvest')">‹ Edit</button><h2>Review second FD</h2>
+  <div class="card"><div class="krow"><span>Booking</span><span>#2 · pre-filled from #1</span></div>
+    <div class="krow"><span>Bank</span><span>${p.bank}</span></div>
+    <div class="krow"><span>Amount</span><span>${fmt(r.amount)}</span></div>
+    <div class="krow"><span>Rate</span><span>${p.rates[r.months].toFixed(2)}% p.a.</span></div>
+    <div class="krow"><span>Tenure</span><span>${r.months/12} year${r.months>12?'s':''}</span></div>
+    <div class="krow"><span>Matures on</span><span>${dstr(addM(new Date(),r.months))}</span></div>
+    <div class="krow"><span>Interest you'll earn</span><span style="color:#0e7c5b">${fmt(mv-r.amount)}</span></div></div>
+  ${insBox(p)}
+  <label class="check"><input type="checkbox" id="c1"><span>I agree to the FD terms and understand the premature-withdrawal penalty.</span></label>
+  ${p.insured?'':`<label class="check"><input type="checkbox" id="c2"><span><b>I understand this NBFC deposit is NOT covered by DICGC insurance.</b></span></label>`}
+  <button class="btn btn-p" onclick="confirmRebook()">Confirm second booking</button>`;
+}
+function confirmRebook(){
+  const c1=$('c1').checked, c2=$('c2')?$('c2').checked:true;
+  if(!c1||!c2){ alert('Please accept the required confirmations to continue.'); return; }
+  const r=S.rebook, p=prod(r.altPid||r.pid);
+  S.holdings.push({ pid:p.id, bank:p.bank, insured:p.insured, type:p.type, rate:p.rates[r.months], months:r.months, amount:r.amount, start:new Date() });
+  go('portfolio');
+}
+
+function vPortfolio(){
+  const tot = S.holdings.reduce((a,h)=>a+h.amount,0);
+  const ins = S.holdings.filter(h=>h.insured).reduce((a,h)=>a+h.amount,0);
+  const proj = S.holdings.reduce((a,h)=>a+(matVal(h.amount,h.rate,h.months)-h.amount),0);
+  const pct = Math.round(ins/tot*100);
+  return `<div style="text-align:center;padding:18px 0 6px"><div style="font-size:44px;color:#0e7c5b">✓</div>
+    <h1>Second FD booked.</h1><p class="sub">One investor, two FDs, one relationship.</p></div>
+  <div class="card" style="border:2px solid #0e7c5b"><b>Your fixed-income portfolio</b>
+    <div class="krow"><span>Total invested</span><span>${fmt(tot)}</span></div>
+    <div class="krow"><span>Projected interest</span><span style="color:#0e7c5b">${fmt(proj)}</span></div>
+    <div class="krow"><span>FDs held</span><span>${S.holdings.length}</span></div>
+    <div class="meta" style="margin-top:8px">Insurance split</div>
+    <div class="splitbar"><div style="width:${pct}%"></div><div style="width:${100-pct}%"></div></div>
+    <div class="legend"><span><i style="background:#0e7c5b"></i>DICGC-insured (${pct}%)</span><span><i style="background:#f0c75e"></i>NBFC (${100-pct}%)</span></div></div>
+  ${S.holdings.map(holdingCard).join('')}
+  <button class="btn btn-p" onclick="go('dashboard')">Back to my FDs</button>`;
+}
+
+/* ================= RENDER ================= */
+const Views = { home:vHome, discover:vDiscover, compare:vCompare, detail:vDetail, book:vBook, review:vReview, receipt:vReceipt, dashboard:vDashboard, reinvest:vReinvest, reinvestReview:vReinvestReview, portfolio:vPortfolio };
+function render(){
+  $('app').innerHTML = Views[S.screen]();
+  const bar = STAGES.map(([label, screens])=>{
+    const idx = STAGES.findIndex(s=>s[1].includes(S.screen));
+    const me = STAGES.findIndex(s=>s[0]===label);
+    const cls = me===idx?'on':(me<idx?'done':'');
+    return `<span class="stage ${cls}">${label}</span>`; }).join('');
+  $('stagebar').innerHTML = bar;
+  const n = S.compare.length;
+  $('tray').classList.toggle('show', S.screen==='discover' && n>0);
+  $('trayTxt').textContent = n + ' selected' + (n<2?' — pick at least 2':'');
+  $('stratPanel').innerHTML = STRAT[S.screen] || '';
+}
+function toggleStrat(){ $('stratPanel').classList.toggle('show'); }
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stable Money — From First FD to Second (Step 9 Deck)</title>
+<style>
+  :root{--ink:#16202e;--muted:#5d6f86;--line:#e2e8f1;--bg:#f4f6fa;--brand:#1f5eff;
+    --brand-soft:#e9efff;--green:#1e7e46;--amber:#b7791f;--card:#fff;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#0f1622;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+  #stage{width:min(1060px,96vw);height:min(640px,92vh);position:relative;}
+  .slide{position:absolute;inset:0;background:var(--card);border-radius:18px;padding:52px 60px;
+    display:none;flex-direction:column;justify-content:center;overflow:hidden;
+    box-shadow:0 24px 80px rgba(0,0,0,.45);}
+  .slide.active{display:flex;}
+  .slide h1{font-size:34px;line-height:1.25;margin-bottom:14px;}
+  .slide h1 .accent{color:var(--brand);}
+  .slide h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);
+    font-weight:800;margin-bottom:12px;}
+  .slide p{font-size:17px;margin-bottom:10px;max-width:820px;}
+  .slide ul{font-size:16.5px;margin:6px 0 6px 22px;max-width:820px;}
+  .slide li{margin-bottom:8px;}
+  .big{font-size:64px;font-weight:800;color:var(--brand);}
+  .big .arrow{color:var(--muted);font-weight:400;}
+  .fact-row{display:flex;gap:28px;margin:18px 0;flex-wrap:wrap;}
+  .fact{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 20px;}
+  .fact b{font-size:26px;display:block;}
+  .fact span{font-size:13px;color:var(--muted);}
+  .bar-row{display:flex;align-items:center;gap:12px;margin:10px 0;max-width:760px;}
+  .bar-row .lbl{width:220px;font-size:14.5px;}
+  .bar{height:22px;border-radius:6px;background:var(--brand);}
+  .bar-row .val{font-size:14px;color:var(--muted);min-width:90px;}
+  .funnel{max-width:640px;margin:16px 0;}
+  .funnel .frow{display:flex;align-items:center;gap:12px;margin:8px 0;}
+  .funnel .fbar{height:34px;border-radius:8px;display:flex;align-items:center;
+    padding:0 14px;color:#fff;font-weight:700;font-size:15px;}
+  .quote{font-size:30px;font-weight:700;line-height:1.4;border-left:5px solid var(--brand);
+    padding-left:22px;margin:10px 0;max-width:800px;}
+  .quote small{display:block;font-size:15px;font-weight:400;color:var(--muted);margin-top:10px;}
+  .cards{display:flex;gap:16px;margin-top:14px;}
+  .mini-card{flex:1;border:1.5px solid var(--line);border-radius:14px;padding:18px;}
+  .mini-card h3{font-size:16px;margin-bottom:6px;}
+  .mini-card p{font-size:14px;color:var(--muted);}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .chip{background:var(--brand-soft);color:var(--brand);font-size:13.5px;font-weight:600;
+    padding:6px 14px;border-radius:99px;}
+  .tl{display:flex;margin:20px 0;max-width:860px;}
+  .tl .t{flex:1;text-align:center;position:relative;padding-top:26px;font-size:13.5px;color:var(--muted);}
+  .tl .t::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:14px;height:14px;border-radius:50%;background:var(--brand);}
+  .tl .t::after{content:"";position:absolute;top:14px;left:-50%;width:100%;height:2px;background:var(--line);z-index:-1;}
+  .tl .t:first-child::after{display:none;}
+  .tl .t b{display:block;color:var(--ink);font-size:14.5px;}
+  .tl .t.hot::before{background:var(--amber);box-shadow:0 0 0 6px #fdf3e0;}
+  table.deck{border-collapse:collapse;font-size:14px;margin:12px 0;max-width:880px;}
+  table.deck th,table.deck td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;}
+  table.deck th{background:#f1f4f9;}
+  .loop{display:flex;align-items:stretch;gap:0;margin:18px 0;max-width:900px;}
+  .loop .node{flex:1;border:2px solid var(--brand);border-radius:12px;padding:12px;font-size:13.5px;
+    text-align:center;background:var(--brand-soft);}
+  .loop .node b{display:block;margin-bottom:4px;}
+  .loop .arr{align-self:center;padding:0 8px;font-size:22px;color:var(--brand);font-weight:700;}
+  .notes{display:none;background:#fffbe8;border-top:1px solid var(--line);border-radius:0 0 18px 18px;
+    padding:14px 60px;font-size:13.5px;color:#6b5f2a;max-height:180px;overflow:auto;}
+  body.show-notes .notes{display:block;}
+  body.show-notes .slide{padding-bottom:20px;}
+  #hud{position:absolute;bottom:-46px;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:center;color:#9fb0c7;font-size:13px;}
+  #hud button{background:#1d2a3f;color:#dbe4f0;border:1px solid #33445e;border-radius:8px;
+    padding:7px 14px;font-size:13px;cursor:pointer;}
+  #hud button:hover{background:#27374f;}
+  .src{font-size:12.5px;color:#93a3b8;margin-top:14px;}
+  .title-slide{background:linear-gradient(135deg,#16202e 0%,#1f5eff 130%);color:#fff;}
+  .title-slide h1{color:#fff;font-size:44px;}
+  .title-slide h2{color:#bcd0ff;}
+  .title-slide p{color:#cdd9ec;}
+  .title-slide .big{color:#fff;}
+  .kicker-row{display:flex;gap:10px;margin-bottom:18px;}
+  .pill{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    background:rgba(255,255,255,.14);padding:6px 14px;border-radius:99px;color:#fff;}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1 TITLE -->
+  <section class="slide title-slide active">
+    <div class="kicker-row"><span class="pill">Product case study</span><span class="pill">Resubmission · Sep 2026</span></div>
+    <h1>From first FD to second.<br>Building repeat fixed-income investing at Stable Money.</h1>
+    <p style="font-size:20px;margin-top:10px">Target: <b style="color:#fff">90-day repeat investment rate 20% → 35%</b> in 6 months.</p>
+    <p>Rohit · Airtribe Product Management Launchpad</p>
+    <div class="notes"><b>Speaker notes:</b> I'm going to show you why 4 in 5 first-time investors never come back — and the precise mechanism we'll use to change that, without a single dark pattern. <b>→</b> The problem as the business feels it.</div>
+  </section>
+
+  <!-- 2 PROBLEM -->
+  <section class="slide">
+    <h2>Problem</h2>
+    <h1>The acquisition engine works.<br><span class="accent">The relationship engine doesn't exist.</span></h1>
+    <div class="fact-row">
+      <div class="fact"><b>30L+</b><span>users</span></div>
+      <div class="fact"><b>₹3,000cr+</b><span>AUM</span></div>
+      <div class="fact"><b>200+</b><span>banks / NBFCs</span></div>
+    </div>
+    <div class="funnel">
+      <div class="frow"><div class="fbar" style="width:100%;background:#1f5eff">100 first-time bookers</div></div>
+      <div class="frow"><div class="fbar" style="width:20%;background:#8aa2ff">20 repeat in 90 days</div><span style="font-size:14px;color:var(--muted)">80 never return</span></div>
+    </div>
+    <p class="src">Source: case brief [CF].</p>
+    <div class="notes"><b>Speaker notes:</b> The acquisition engine works. The relationship engine doesn't exist yet. <b>→</b> Why the business should care about the second FD more than the next million users.</div>
+  </section>
+
+  <!-- 3 WHY IT MATTERS -->
+  <section class="slide">
+    <h2>Why it matters</h2>
+    <h1>Repeat is <span class="accent">the cheapest growth</span> in the company.</h1>
+    <ul>
+      <li>Every point of repeat-rate lift monetizes <b>30L+ installed users</b> at near-zero marginal CAC.</li>
+      <li>Household savings are structurally shifting toward term deposits — <b>61.6%</b> of deposits; households contribute <b>59.3%</b> of total deposits (Mar 2026).</li>
+      <li>AUM per user compounds <b>only if the second booking happens</b>.</li>
+    </ul>
+    <p class="src">Sources: case brief [CF]; RBI deposit data [SR].</p>
+    <div class="notes"><b>Speaker notes:</b> This isn't a retention nice-to-have. It's the highest-leverage P&amp;L lever in the company. <b>→</b> What we actually know — and what we refused to invent.</div>
+  </section>
+
+  <!-- 4 RESEARCH -->
+  <section class="slide">
+    <h2>Research</h2>
+    <h1>Rigorous about evidence.<br><span class="accent">Honest about its limits.</span></h1>
+    <div class="cards">
+      <div class="mini-card"><h3>External evidence</h3><p>Modal FD tenure 1–3 years [SR] · DICGC ₹5L/depositor/bank; NBFC deposits not covered [SR]</p></div>
+      <div class="mini-card"><h3>Hypotheses</h3><p>8 labeled hypotheses, ranked barriers — attention gap primary [H]</p></div>
+      <div class="mini-card"><h3>Planned, not claimed</h3><p>15–20 interviews + 300–500-person survey designed. <b>No quotes invented.</b></p></div>
+    </div>
+    <div class="notes"><b>Speaker notes:</b> You'll see [H] and [A] labels throughout — anything unvalidated is marked, and every one has a validation plan. <b>→</b> The insight that reframed the whole problem.</div>
+  </section>
+
+  <!-- 5 INSIGHT -->
+  <section class="slide">
+    <h2>Key insight</h2>
+    <div class="quote">"It's a decision-architecture problem,<br>not a motivation problem."<small>Users don't distrust FDs — the product gives them no reason to return. The first booking ends the relationship instead of starting it.<br><br>Early framing corrected: the KPI window is 90 days, but most FDs mature in 1–3 years — maturity-centric thinking misses the window entirely.</small></div>
+    <div class="notes"><b>Speaker notes:</b> We started where most teams would — maturity reminders. The tenure data killed that idea in week one. <b>→</b> If motivation isn't the blocker, what is?</div>
+  </section>
+
+  <!-- 6 ROOT CAUSE -->
+  <section class="slide">
+    <h2>Root cause</h2>
+    <h1>A structural <span class="accent">attention gap</span> —<br>the product is silent exactly when the metric is listening.</h1>
+    <div class="tl">
+      <div class="t"><b>Day 0</b>First FD booked</div>
+      <div class="t hot"><b>Days 1–90</b>KPI window — the vacuum</div>
+      <div class="t"><b>Months 12–36</b>Maturity (outside window)</div>
+    </div>
+    <ul>
+      <li><b>Primary:</b> nothing legitimate brings the user back during the 90 days [H]</li>
+      <li><b>Secondary:</b> re-decision friction · DICGC-vs-NBFC confusion · liquidity anxiety [H]</li>
+    </ul>
+    <div class="notes"><b>Speaker notes:</b> The product is silent exactly when the metric is listening. <b>→</b> That diagnosis writes the design brief.</div>
+  </section>
+
+  <!-- 7 HMW -->
+  <section class="slide">
+    <h2>Opportunity</h2>
+    <div class="quote" style="font-size:24px">"How might we give first-time FD investors a legitimate, welcome reason to re-engage <em>well before</em> their FD matures — one that reinforces trust rather than manufacturing urgency?"<small>…so that continuing to invest feels like the natural next step, not a fresh decision.</small></div>
+    <div class="chips"><span class="chip">Work pre-maturity</span><span class="chip">Clarity before persuasion</span><span class="chip">Reduce effort</span><span class="chip">Safety at decision</span><span class="chip">No FOMO</span></div>
+    <div class="notes"><b>Speaker notes:</b> Note what's banned: urgency. If the mechanism needs pressure to work, it's the wrong mechanism for a trust product. <b>→</b> Fourteen ideas went through that filter. Two survived.</div>
+  </section>
+
+  <!-- 8 SOLUTIONS -->
+  <section class="slide">
+    <h2>Solutions</h2>
+    <h1>Two concepts. <span class="accent">A pair, not alternatives.</span></h1>
+    <div class="cards">
+      <div class="mini-card"><h3>Concept A — "The First 90 Days"</h3><p>Trust Receipt + Savings Pulse + digest. <b>Earns attention through reassurance.</b></p></div>
+      <div class="mini-card"><h3>Concept B — "Repeat in Two Taps"</h3><p>Pre-filled second booking, insurance clarity, liquidity upfront. <b>Converts through ease.</b></p></div>
+    </div>
+    <p style="margin-top:14px;font-size:14.5px;color:var(--muted)"><b>Parked:</b> maturity countdown (wrong window for most users) · <b>Rejected:</b> personalized recommendations (assistance → advice → mis-selling risk)</p>
+    <div class="notes"><b>Speaker notes:</b> A earns the attention; B converts it. Neither works alone. <b>→</b> The math behind picking these two.</div>
+  </section>
+
+  <!-- 9 PRIORITIZATION -->
+  <section class="slide">
+    <h2>Prioritization</h2>
+    <h1>Weighted, with trust as <span class="accent">a veto.</span></h1>
+    <div class="bar-row"><span class="lbl">90-day impact</span><div class="bar" style="width:250px"></div><span class="val">25%</span></div>
+    <div class="bar-row"><span class="lbl">Evidence · User value · Feasibility</span><div class="bar" style="width:150px"></div><span class="val">15% each</span></div>
+    <div class="bar-row"><span class="lbl">Time to launch · Trust/safety · Strategic fit</span><div class="bar" style="width:100px"></div><span class="val">10% each</span></div>
+    <p style="margin-top:10px;font-size:14.5px;color:var(--muted)">Anything scoring on conversion but failing trust died in the model.</p>
+    <div class="notes"><b>Speaker notes:</b> Trust/safety is an explicit 10% — and a veto. <b>→</b> So what exactly are we building?</div>
+  </section>
+
+  <!-- 10 CHOSEN SOLUTION -->
+  <section class="slide">
+    <h2>Chosen solution</h2>
+    <div class="quote" style="font-size:24px">"Your second FD takes two taps — pre-filled from your first, with insurance and liquidity terms shown upfront."<small>No re-research. No surprises. No pressure.</small></div>
+    <div class="chips"><span class="chip">Safety Ledger</span><span class="chip">→ Trust Receipt</span><span class="chip">→ Savings Pulse 30/60/90</span><span class="chip">→ Day-90 nudge</span><span class="chip">→ Two-Tap Rebook</span><span class="chip">→ Portfolio</span></div>
+    <div class="notes"><b>Speaker notes:</b> Every element maps to a barrier from the root-cause slide. Nothing is decorative. <b>→</b> The journey end to end.</div>
+  </section>
+
+  <!-- 11 JOURNEY -->
+  <section class="slide">
+    <h2>User journey</h2>
+    <h1>From anxious <span class="accent">to ready</span> — without manufactured urgency.</h1>
+    <div class="tl">
+      <div class="t"><b>Book</b>Safety Ledger</div>
+      <div class="t"><b>Day 0</b>Trust Receipt</div>
+      <div class="t"><b>Day 7</b>All-good check</div>
+      <div class="t"><b>Day 30/60</b>Savings Pulse</div>
+      <div class="t hot"><b>Day 90</b>Nudge / Readiness Check</div>
+      <div class="t"><b>Rebook</b>2 taps</div>
+      <div class="t"><b>Portfolio</b>Insurance split</div>
+    </div>
+    <p style="font-size:14.5px;color:var(--muted)">Emotion line: anxious → relieved → warming → ready. The product moves it; never with urgency.</p>
+    <div class="notes"><b>Speaker notes:</b> Watch the emotion line — the product's job is to move it from anxious to ready. <b>→</b> The build spec behind that journey — highlights only.</div>
+  </section>
+
+  <!-- 12 PRD -->
+  <section class="slide">
+    <h2>PRD highlights</h2>
+    <h1>The contract the team <span class="accent">builds to.</span></h1>
+    <table class="deck">
+      <tr><th>In scope</th><th>Out of scope</th></tr>
+      <tr><td>FDs / fixed-return products · existing consumer experience</td><td>Mutual funds · loans · credit cards · backend integrations · ops dashboards</td></tr>
+    </table>
+    <ul>
+      <li>Safety Ledger ordering <b>never for sale</b>; pre-fill labeled <b>"your last booking, not a recommendation"</b></li>
+      <li>≤1 push/week, quiet hours, one-tap opt-out · KPI event: <b><code>booking_confirmed_second</code></b> · second booking &lt;3 min (product goal)</li>
+    </ul>
+    <div class="notes"><b>Speaker notes:</b> The full PRD is appendix C. This is the part you'd hold me to. <b>→</b> And it's already clickable.</div>
+  </section>
+
+  <!-- 13 PROTOTYPE -->
+  <section class="slide">
+    <h2>Prototype</h2>
+    <h1>Show, <span class="accent">don't tell.</span></h1>
+    <div class="cards">
+      <div class="mini-card"><h3>End-to-end flow</h3><p>Booking → Trust Receipt → Pulse (Day 1/30/60/90 time travel) → Rebook → portfolio. Mock data labeled; JS flow-tested.</p></div>
+      <div class="mini-card"><h3>Readiness Check (Step 8)</h3><p>Working Day-90 reflection engine — deterministic rules, hard gates, 12-assertion test harness. Testing caught a real bug; we fixed the rule.</p></div>
+    </div>
+    <p class="src">Live in the submission folder: step-9-deck links → both prototypes.</p>
+    <div class="notes"><b>Speaker notes:</b> Both run on labeled mock data. The Readiness Check caught a real design bug in testing — "almost ready" reachable with zero positive signals. Fixed before this presentation. <b>→</b> Product is half the story. Here's how it reaches users.</div>
+  </section>
+
+  <!-- 14 GTM -->
+  <section class="slide">
+    <h2>Go-to-market</h2>
+    <h1>A <span class="accent">retention</span> GTM on the base we already have.</h1>
+    <div class="tl">
+      <div class="t"><b>Days 0–7</b>Land the relationship</div>
+      <div class="t"><b>Days 8–89</b>Warm the holding period</div>
+      <div class="t hot"><b>Day 90</b>Convert the decision</div>
+    </div>
+    <ul>
+      <li>Push (capped) · WhatsApp <b>opt-in, DLT-gated</b> · email · in-app</li>
+      <li>India-first: regional languages (Phase 2), Diwali overlay, <b>WhatsApp receipt forwarding</b> — FD decisions are family decisions</li>
+    </ul>
+    <div class="notes"><b>Speaker notes:</b> Paid acquisition is deliberately not the lever. The economics come from the base we have. <b>→</b> The loop that compounds it.</div>
+  </section>
+
+  <!-- 15 GROWTH LOOP -->
+  <section class="slide">
+    <h2>Growth loop</h2>
+    <h1>The reinvestment <span class="accent">flywheel.</span></h1>
+    <div class="loop">
+      <div class="node"><b>Input</b>1 FD, warming trust</div><div class="arr">→</div>
+      <div class="node"><b>Behavior</b>Pulse proof lands</div><div class="arr">→</div>
+      <div class="node"><b>Output</b>2nd FD in ~2 taps</div><div class="arr">→</div>
+      <div class="node"><b>Next input</b>2 FDs, richer pre-fill — cycle tightens</div>
+    </div>
+    <ul>
+      <li><b>Advocacy loop:</b> receipt forwarding → new first-timer at ~zero CAC</li>
+      <li><b>Data flywheel:</b> behavior → better timing → higher repeat</li>
+    </ul>
+    <div class="notes"><b>Speaker notes:</b> Each turn increases AUM per user and shortens the next cycle — compounding without new CAC. <b>→</b> Honest numbers on that compounding.</div>
+  </section>
+
+  <!-- 16 BUSINESS IMPACT -->
+  <section class="slide">
+    <h2>Business impact</h2>
+    <h1>Formulas, not <span class="accent">fabrications.</span></h1>
+    <p style="font-size:15px">ΔR = 0.15N <b>(+75% repeaters — exact)</b> · ΔV = 0.15·N·A1·(k+q·j) · ΔRev = ΔV·m · ΔAUM<sub>ss</sub> ≈ ΔV·T</p>
+    <div class="bar-row"><span class="lbl">Conservative</span><div class="bar" style="width:180px"></div><span class="val">120·A1 vol</span></div>
+    <div class="bar-row"><span class="lbl">Base</span><div class="bar" style="width:281px"></div><span class="val">187.5·A1 vol</span></div>
+    <div class="bar-row"><span class="lbl">Upside</span><div class="bar" style="width:369px"></div><span class="val">246·A1 vol</span></div>
+    <p style="font-size:13.5px;color:var(--muted)">Per 1,000 monthly entrants, in first-ticket units. N, A1, m are company inputs — no revenue, margin, CAC, or ticket values invented.</p>
+    <div class="notes"><b>Speaker notes:</b> The formulas are the deliverable. Plug in the company's N, A1, and margin and the scenarios resolve — I refused to invent them. <b>→</b> A model is only as honest as its measurement.</div>
+  </section>
+
+  <!-- 17 METRICS -->
+  <section class="slide">
+    <h2>Metrics</h2>
+    <h1>A North Star that <span class="accent">can't be gamed.</span></h1>
+    <ul>
+      <li><b>RR90</b> = deliberate 2nd bookings ÷ first-time bookers · (T0, T0+90d] · weekly cohorts · <b>passive auto-renewals excluded by charter</b></li>
+      <li>Tree: <b>leading</b> (Pulse open, visits d8–90, rebook entry) → <b>behavioral</b> (A1→A4 funnel) → <b>product</b> (disclosure-expand, alt-select, fatigue) → <b>business</b> (ΔV, ΔAUM, ΔRev)</li>
+      <li><b>Guardrails are kill triggers:</b> any breach pauses rollout — even if RR90 climbs</li>
+    </ul>
+    <div class="notes"><b>Speaker notes:</b> Because passive renewals are excluded, this metric cannot be moved by inertia or dark patterns — only by users deliberately choosing to invest again. <b>→</b> Exactly what the risk review stress-tested.</div>
+  </section>
+
+  <!-- 18 RISKS -->
+  <section class="slide">
+    <h2>Risks &amp; trade-offs</h2>
+    <h1>We tried to <span class="accent">kill our own plan.</span></h1>
+    <ul>
+      <li><b>FM1:</b> users have no fresh savings — attention unwanted, not missing → overturn clause</li>
+      <li><b>FM2:</b> trust damaged, not absent — touches read as harassment → kill-switch</li>
+      <li><b>FM5:</b> commercial pressure softens the Safety Ledger → quarterly ranking audit</li>
+    </ul>
+    <div class="chips"><span class="chip">Ranking never for sale</span><span class="chip">Flat payouts</span><span class="chip">Pre-fill assists, never advises</span><span class="chip">No urgency monetization</span><span class="chip">No data sale</span></div>
+    <p style="font-size:13.5px;color:var(--muted);margin-top:10px">7 compliance areas flagged for legal sign-off — presented as intentions, not settled law.</p>
+    <div class="notes"><b>Speaker notes:</b> The sharpest trade-off: we will lose A/B tests to urgency copy — and ship the loser anyway. <b>→</b> How we launch without betting the company.</div>
+  </section>
+
+  <!-- 19 EXPERIMENTATION -->
+  <section class="slide">
+    <h2>Experimentation &amp; rollout</h2>
+    <h1>Gated phases. <span class="accent">Honest reads.</span></h1>
+    <div class="tl">
+      <div class="t"><b>Phase 1</b>5% · leading gate @6 wks · KPI @90d</div>
+      <div class="t"><b>Phase 2</b>50% · Tier 2/3 + WhatsApp variants</div>
+      <div class="t"><b>Phase 3</b>100% · maturity pilot</div>
+    </div>
+    <p style="font-size:14.5px;color:var(--muted)">8 experiments (E1–E8), each with hypothesis, guardrails &amp; decision criteria. The KPI needs 90 days to mature — decisions run on leading indicators first, confirmed at 90 days. Never one without the other.</p>
+    <div class="notes"><b>Speaker notes:</b> We never wait 90 days to make a decision and never decide on 6-week data alone. <b>→</b> Which lands us at the target.</div>
+  </section>
+
+  <!-- 20 TARGET + ASK -->
+  <section class="slide title-slide">
+    <h2 style="color:#bcd0ff">6-month success target</h2>
+    <div class="big">20% <span class="arrow">→</span> 35%</div>
+    <p style="font-size:18px;margin-top:8px">Verdict at month 6: RR90 reads 35% — <b style="color:#fff">with guardrails green.</b></p>
+    <div class="quote" style="border-color:#bcd0ff;font-size:19px;color:#fff;margin-top:16px">"Every mechanism is judged on whether the user would thank us at maturity — not whether they tapped today."</div>
+    <p style="margin-top:16px;font-size:17px"><b style="color:#fff">The ask:</b> approve the Phase 1 (5%) cohort — and lock the RR90 charter.</p>
+    <div class="notes"><b>Speaker notes:</b> If we hit 35% with trust intact, we've built a compounding engine. If the guardrails trip, we stop — that's also a successful outcome of a well-instrumented plan. Questions — the appendices have everything I didn't have time to show.</div>
+  </section>
+
+  <div id="hud">
+    <span><button onclick="prev()">← Prev</button> <button onclick="next()">Next →</button></span>
+    <span id="counter">1 / 20</span>
+    <span><button onclick="toggleNotes()">Speaker notes</button></span>
+  </div>
+</div>
+<script>
+let cur = 0;
+const slides = document.querySelectorAll('.slide');
+function render(){
+  slides.forEach((s,i)=>s.classList.toggle('active', i===cur));
+  document.getElementById('counter').textContent = (cur+1)+' / '+slides.length;
+}
+function next(){ if(cur < slides.length-1){cur++;render();} }
+function prev(){ if(cur > 0){cur--;render();} }
+function toggleNotes(){ document.body.classList.toggle('show-notes'); }
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight'||e.key===' '){next();}
+  else if(e.key==='ArrowLeft'){prev();}
+  else if(e.key.toLowerCase()==='n'){toggleNotes();}
+});
+document.getElementById('stage').addEventListener('click', e=>{
+  if(e.target.closest('button')) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  (e.clientX - r.left > r.width/2) ? next() : prev();
+});
+render();
+</script>
+</body>
+</html>
